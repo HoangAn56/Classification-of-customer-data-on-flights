@@ -1,0 +1,72 @@
+---
+title: "phan loai du lieu"
+author: "An"
+date: "`r Sys.Date()`"
+output: html_document
+---
+setwd("C://Users//Admin//Desktop//Data mining//seminar")
+train<-read.csv("train.csv")
+View(train)
+#1.Thực hiện tiền xử lý dữ liệu
+anyNA(train)
+is.na(train)
+library(tidyr)
+library(dplyr)
+train <-na.omit(train)
+train$Survived <- as.factor(train$Survived)
+#2. Chuẩn hóa 2 biến tuổi và giá vé
+library(caret)
+train1 <- preProcess (train [c("Age","Fare")],method = c("center","scale"))
+train2 <- predict(train1, train)
+#3. Thực hiện phân loại với biến Survived trên cơ sở các biến Pclass, Sex, Age, SibSp, Parch, Fare và Embarked bằng 2 phương pháp theo KNN và Cây QĐ
+set.seed(123)
+best_knn <- train(Survived~Pclass+ Sex+ Age+ SibSp+ Parch+ Fare + Embarked, train2,
+method="knn", na.action = na.omit, tuneLength = 10)          
+best_knn
+*cây qđ*
+DT <- train(Survived~Pclass+ Sex+ Age+ SibSp+ Parch+ Fare + Embarked, train2,
+method="rpart", na.action = na.omit, tuneLength = 10)          
+DT
+plot(DT)
+library(rpart.plot)
+rpart.plot(DT$finalModel)
+#4. Thực hiện dự đoán cho biến phân loại Survived đối với dữ liệu test
+phải làm dl test
+setwd("C://Users//Admin//Desktop//Data mining//seminar")
+test <-read.csv("test.csv")
+View(test)
+#4.1.Thực hiện tiền xử lý dữ liệu
+anyNA(test)
+library(tidyr)
+library(dplyr)
+test <-na.omit(test)
+test$Survived <- as.factor(test$Survived)
+#4.2. Chuẩn hóa 2 biến tuổi và giá vé
+library(caret)
+test1 <- preProcess (test [c("Age","Fare")],method = c("center","scale"))
+test2 <- predict(test1, test)
+pred <- predict(best_knn, test2)
+pred
+#4.3.Đánh giá độ chính xác của mô hình phân loại theo KNN
+để so sang pred với giá trị thực tế chính là test_set
+confusionMatrix(table(pred, test2$Survived))
+đọc kqua:Accuracy : 0.8006  (độ chính xác)
+        Kappa :   0.587 
+#Lựa chọn phương pháp phân loại tốt hơn trên cơ sở so sánh độ chính xác của mô hình
+trên là kq của KNN
+h làm DT
+*Decision tree*
+DT <- train(Survived~Pclass+ Sex+ Age+ SibSp+ Parch+ Fare + Embarked, train2,
+method="rpart", na.action = na.omit, tuneLength = 10)          
+DT
+plot(DT)
+library(rpart.plot)
+rpart.plot(DT$finalModel)
+pred <- predict(DT, test2)
+pred
+#4.3.Đánh giá độ chính xác của mô hình phân loại theo KNN
+để so sang pred với giá trị thực tế chính là test_set
+confusionMatrix(table(pred, test2$Survived))
+đọc kqua:Accuracy : 0.9305  (độ chính xác)
+        Kappa :   0.8537 
+độ cxac của Cây QĐ cao hơn -> phương pháp Cây QĐ tốt hơn
